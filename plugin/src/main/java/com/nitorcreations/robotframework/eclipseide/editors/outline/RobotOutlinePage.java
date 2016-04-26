@@ -3,6 +3,7 @@ package com.nitorcreations.robotframework.eclipseide.editors.outline;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TreeViewer;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.texteditor.IDocumentProvider;
@@ -38,5 +39,10 @@ public class RobotOutlinePage extends ContentOutlinePage {
         super.selectionChanged(event);
 
         // TODO Jump to selection
+    }
+
+    @Override
+    protected int getTreeStyle() {
+        return SWT.SINGLE | SWT.H_SCROLL | SWT.V_SCROLL;
     }
 }
