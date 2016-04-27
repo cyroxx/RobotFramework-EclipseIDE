@@ -1,6 +1,6 @@
 package com.nitorcreations.robotframework.eclipseide.editors.outline;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import com.nitorcreations.robotframework.eclipseide.structure.ParsedString;
@@ -13,7 +13,7 @@ public class RootCategoryEntry {
     public RootCategoryEntry(Object input, String category, Set<ParsedString> parsedStrings) {
         this.input = input;
         this.category = category;
-        this.entries = new HashSet<ParsedStringEntry>(parsedStrings.size());
+        this.entries = new LinkedHashSet<ParsedStringEntry>(parsedStrings.size());
         for (ParsedString parsedString : parsedStrings) {
             ParsedStringEntry entry = new ParsedStringEntry(this, parsedString);
             entries.add(entry);
