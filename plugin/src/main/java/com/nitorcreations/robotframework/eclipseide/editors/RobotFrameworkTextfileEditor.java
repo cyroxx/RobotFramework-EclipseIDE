@@ -21,15 +21,20 @@ import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.util.PropertyChangeEvent;
+import org.eclipse.jface.viewers.ISelectionChangedListener;
+import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.editors.text.FileDocumentProvider;
 import org.eclipse.ui.editors.text.TextEditor;
 import org.eclipse.ui.texteditor.ChainedPreferenceStore;
+import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 
 import com.nitorcreations.robotframework.eclipseide.Activator;
 import com.nitorcreations.robotframework.eclipseide.PluginContext;
 import com.nitorcreations.robotframework.eclipseide.builder.parser.RobotFile;
+import com.nitorcreations.robotframework.eclipseide.editors.outline.ParsedStringEntry;
 import com.nitorcreations.robotframework.eclipseide.editors.outline.RobotOutlinePage;
 
 /**
@@ -93,7 +98,7 @@ public class RobotFrameworkTextfileEditor extends TextEditor {
     }
 
     public IFile getEditedFile() {
-        return (IFile) getEditorInput().getAdapter(IFile.class);
+        return getEditorInput().getAdapter(IFile.class);
     }
 
     @Override
@@ -134,12 +139,37 @@ public class RobotFrameworkTextfileEditor extends TextEditor {
         if (IContentOutlinePage.class.equals(required)) {
             if (outlinePage == null) {
                 outlinePage = new RobotOutlinePage(getDocumentProvider());
+                outlinePage.addSelectionChangedListener(new RobotOutlineSelectionChangedListener(this));
                 if (getEditorInput() != null)
                     outlinePage.setInput(getEditorInput());
             }
             return outlinePage;
         }
         return super.getAdapter(required);
+    }
+
+    private final class RobotOutlineSelectionChangedListener implements ISelectionChangedListener {
+        private final ITextEditor textEditor;
+
+        public RobotOutlineSelectionChangedListener(ITextEditor textEditor) {
+            this.textEditor = textEditor;
+        }
+
+        @Override
+        public void selectionChanged(SelectionChangedEvent event) {
+            if (event.getSelection() instanceof IStructuredSelection) {
+                IStructuredSelection selection = (IStructuredSelection) event.getSelection();
+
+                // so far, we only support the selection of one entry at a time - see RobotOutlinePage#getTreeStyle()
+                Object domain = selection.getFirstElement();
+                if (domain instanceof ParsedStringEntry) {
+                    ParsedStringEntry lineEntry = (ParsedStringEntry) domain;
+                    int startCharPos = lineEntry.getStartCharPos();
+                    int endCharPos = lineEntry.getEndCharPos();
+                    textEditor.selectAndReveal(startCharPos, endCharPos - startCharPos);
+                }
+            }
+        }
     }
 }
 

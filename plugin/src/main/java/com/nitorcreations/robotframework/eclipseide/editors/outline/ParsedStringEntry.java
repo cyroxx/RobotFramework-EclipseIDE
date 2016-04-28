@@ -16,6 +16,14 @@ public class ParsedStringEntry {
         return parent;
     }
 
+    public int getStartCharPos() {
+        return parsedString.getArgCharPos();
+    }
+
+    public int getEndCharPos() {
+        return parsedString.getArgEndCharPos();
+    }
+
     @Override
     public String toString() {
         return parsedString.getValue();
