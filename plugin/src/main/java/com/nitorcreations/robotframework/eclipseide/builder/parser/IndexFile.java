@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 Nitor Creations Oy
+ * Copyright 2012, 2015 Nitor Creations Oy
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,10 @@
  */
 package com.nitorcreations.robotframework.eclipseide.builder.parser;
 
+import static com.nitorcreations.robotframework.eclipseide.internal.util.Reporter.report;
+
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -27,6 +30,8 @@ import java.util.List;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 
 import com.nitorcreations.robotframework.eclipseide.internal.util.FileWithType;
@@ -86,7 +91,11 @@ public class IndexFile {
             return Collections.emptyList();
         }
         if (!indexFile.exists()) {
-            System.out.println("Warning: index file " + indexFile + " not found, not able to do proper error checking / hyperlinking / code completion");
+            if (indexFile.isSynchronized(IFile.DEPTH_ZERO)) {
+                report("Warning: index file " + formatForLog(indexFile) + " not found, not able to do proper error checking / hyperlinking / code completion");
+            } else {
+                report("Warning: index file " + formatForLog(indexFile) + " is out of sync. Please refresh the workspace.");
+            }
             return Collections.emptyList();
         }
         List<String> contents = load(indexFile);
@@ -107,6 +116,13 @@ public class IndexFile {
                 lines.add(line);
             }
             return lines;
+        } catch (CoreException e) {
+            if (e.getCause() instanceof FileNotFoundException) {
+                report("Workspace out of sync for file " + formatForLog(indexFile) + " - it no longer exists in the file system. Please refresh the workspace.");
+            } else {
+                e.printStackTrace();
+            }
+            return Collections.emptyList();
         } catch (Exception e) {
             e.printStackTrace();
             return Collections.emptyList();
@@ -141,6 +157,17 @@ public class IndexFile {
                 it.remove();
             }
         }
+    }
+
+    private static String formatForLog(IResource resource) {
+        if (resource == null) {
+            return null;
+        }
+        IPath location = resource.getLocation();
+        if (location == null) {
+            return resource.toString();
+        }
+        return location.toOSString() + " (" + resource + ')';
     }
 
 }

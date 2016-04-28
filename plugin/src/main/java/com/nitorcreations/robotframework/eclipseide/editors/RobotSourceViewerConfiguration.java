@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 Nitor Creations Oy
+ * Copyright 2012-2014 Nitor Creations Oy, SmallGreenET
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.AbstractReusableInformationControlCreator;
 import org.eclipse.jface.text.DefaultInformationControl;
 import org.eclipse.jface.text.IDocument;
@@ -31,9 +32,15 @@ import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.editors.text.TextSourceViewerConfiguration;
 
-import com.nitorcreations.robotframework.eclipseide.internal.assistant.ProposalGenerator;
 import com.nitorcreations.robotframework.eclipseide.internal.assistant.RobotContentAssistant;
+import com.nitorcreations.robotframework.eclipseide.internal.assistant.RobotContentAssistant2;
+import com.nitorcreations.robotframework.eclipseide.internal.assistant.VariableReplacementRegionCalculator;
+import com.nitorcreations.robotframework.eclipseide.internal.assistant.proposalgenerator.AttemptGenerator;
+import com.nitorcreations.robotframework.eclipseide.internal.assistant.proposalgenerator.ProposalGeneratorFactory;
+import com.nitorcreations.robotframework.eclipseide.internal.assistant.proposalgenerator.ProposalSuitabilityDeterminer;
+import com.nitorcreations.robotframework.eclipseide.internal.assistant.proposalgenerator.RelevantProposalsFilter;
 import com.nitorcreations.robotframework.eclipseide.internal.hyperlinks.KeywordCallHyperlinkDetector;
+import com.nitorcreations.robotframework.eclipseide.internal.hyperlinks.LibraryHyperlinkDetector;
 import com.nitorcreations.robotframework.eclipseide.internal.hyperlinks.ResourceHyperlinkDetector;
 import com.nitorcreations.robotframework.eclipseide.internal.hyperlinks.VariableAccessHyperlinkDetector;
 
@@ -41,9 +48,9 @@ public class RobotSourceViewerConfiguration extends TextSourceViewerConfiguratio
 
     private final ColorManager colorManager;
 
-    public RobotSourceViewerConfiguration(ColorManager colorManager) {
+    public RobotSourceViewerConfiguration(ColorManager colorManager, IPreferenceStore prefStore) {
+        super(prefStore);
         this.colorManager = colorManager;
-
     }
 
     // public ITextDoubleClickStrategy getDoubleClickStrategy(
@@ -69,6 +76,7 @@ public class RobotSourceViewerConfiguration extends TextSourceViewerConfiguratio
         detectors.add(new ResourceHyperlinkDetector());
         detectors.add(new KeywordCallHyperlinkDetector());
         detectors.add(new VariableAccessHyperlinkDetector());
+        detectors.add(new LibraryHyperlinkDetector());
         return detectors.toArray(new IHyperlinkDetector[detectors.size()]);
     }
 
@@ -94,7 +102,9 @@ public class RobotSourceViewerConfiguration extends TextSourceViewerConfiguratio
         // assistant.setContextInformationPopupOrientation(IContentAssistant.CONTEXT_INFO_ABOVE);
         // assistant.setStatusLineVisible(true);
 
-        assistant.setContentAssistProcessor(new RobotContentAssistant(new ProposalGenerator()), IDocument.DEFAULT_CONTENT_TYPE);
+        ProposalSuitabilityDeterminer proposalSuitabilityDeterminer = new ProposalSuitabilityDeterminer(new ProposalGeneratorFactory(), new VariableReplacementRegionCalculator());
+        RobotContentAssistant2 assistant2 = new RobotContentAssistant2(proposalSuitabilityDeterminer, new AttemptGenerator(), new RelevantProposalsFilter());
+        assistant.setContentAssistProcessor(new RobotContentAssistant(assistant2), IDocument.DEFAULT_CONTENT_TYPE);
 
         assistant.setInformationControlCreator(new AbstractReusableInformationControlCreator() {
             @Override

@@ -6,7 +6,7 @@
          point="org.eclipse.ui.editors">
       <editor
             name="Robot Framework Textfile Editor"
-            extensions="txt"
+            extensions="txt,robot"
             icon="src/main/resources/robo1.png"
             contributorClass="org.eclipse.ui.texteditor.BasicTextEditorActionContributor"
             class="com.nitorcreations.robotframework.eclipseide.editors.RobotFrameworkTextfileEditor"
@@ -81,6 +81,24 @@
             id="com.nitorcreations.robotframework.eclipseide.preferences.ColorPreferencePage"
             category="com.nitorcreations.robotframework.eclipseide.preferences.MainPreferencePage"
             name="Syntax Coloring">
+      </page>
+   </extension>
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            class="com.nitorcreations.robotframework.eclipseide.preferences.TableNamingPreferencePage"
+            id="com.nitorcreations.robotframework.eclipseide.preferences.TableNamingPreferencePage"
+            category="com.nitorcreations.robotframework.eclipseide.preferences.MainPreferencePage"
+            name="Table naming">
+      </page>
+   </extension>
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            class="com.nitorcreations.robotframework.eclipseide.preferences.FormattingPreferencePage"
+            id="com.nitorcreations.robotframework.eclipseide.preferences.FormattingPreferencePage"
+            category="com.nitorcreations.robotframework.eclipseide.preferences.MainPreferencePage"
+            name="Formatting">
       </page>
    </extension>
    <extension

@@ -2,16 +2,17 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Robot Framework Textfile Editor
 Bundle-SymbolicName: com.nitorcreations.robotframework.eclipseide;singleton:=true
-Bundle-Version: 1.2.0
+Bundle-Version: 1.4.0
 Bundle-Activator: com.nitorcreations.robotframework.eclipseide.Activator
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
+ org.eclipse.jdt.core,
  org.eclipse.jface.text,
  org.eclipse.ui.editors,
  org.eclipse.core.resources,
  org.eclipse.ui.ide,
- org.junit;resolution:=optional,
- org.eclipse.ui.views
+ org.eclipse.ui.views,
+ org.junit;resolution:=optional
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Export-Package: com.nitorcreations.robotframework.eclipseide,

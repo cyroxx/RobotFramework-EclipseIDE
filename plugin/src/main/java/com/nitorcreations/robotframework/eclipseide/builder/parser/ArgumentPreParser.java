@@ -1,5 +1,5 @@
 /**
- * Copyright 2012-2013 Nitor Creations Oy
+ * Copyright 2012-2014 Nitor Creations Oy
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import com.nitorcreations.robotframework.eclipseide.structure.ParsedString;
 import com.nitorcreations.robotframework.eclipseide.structure.ParsedString.ArgumentType;
 
 public class ArgumentPreParser {
+
+    public static boolean DEBUG = false;
 
     enum SettingType {
         UNKNOWN, STRING, FILE, FILE_ARGS, KEYWORD_ARGS,
@@ -144,9 +146,11 @@ public class ArgumentPreParser {
                 --argLen; // exclude now, deal with it later (see top of method)
             }
         } else {
-            // for (RobotLine line : lines) {
-            // System.out.println(line);
-            // }
+            if (DEBUG) {
+                for (RobotLine line : lines) {
+                    System.out.println(line);
+                }
+            }
             lines = null;
             lineIterator = null;
             argLen = 0;
@@ -166,6 +170,10 @@ public class ArgumentPreParser {
     }
 
     public void parseAll() {
+        if (lines == null) {
+            // empty file
+            return;
+        }
         lookForGlobalTestTemplate();
         while (lineIterator != null) {
             parseMoreTokens();
@@ -564,9 +572,12 @@ public class ArgumentPreParser {
     /* The value of the map is the argument position of the keyword that the key keyword takes as a parameter. */
     private static final Map<String, Integer> keywordsTakingKeywords = new HashMap<String, Integer>();
     static {
+        keywordsTakingKeywords.put("Keyword Should Exist", 1);
         keywordsTakingKeywords.put("Run Keyword", 1);
         keywordsTakingKeywords.put("Run Keyword And Continue On Failure", 1);
         keywordsTakingKeywords.put("Run Keyword And Ignore Error", 1);
+        keywordsTakingKeywords.put("Run Keyword And Return", 1);
+        keywordsTakingKeywords.put("Run Keyword And Return Status", 1);
         keywordsTakingKeywords.put("Run Keyword If All Critical Tests Passed", 1);
         keywordsTakingKeywords.put("Run Keyword If All Tests Passed", 1);
         keywordsTakingKeywords.put("Run Keyword If Any Critical Tests Failed", 1);
@@ -574,9 +585,9 @@ public class ArgumentPreParser {
         keywordsTakingKeywords.put("Run Keyword If Test Failed", 1);
         keywordsTakingKeywords.put("Run Keyword If Test Passed", 1);
         keywordsTakingKeywords.put("Run Keyword If Timeout Occurred", 1);
-        keywordsTakingKeywords.put("Keyword Should Exist", 1);
 
         keywordsTakingKeywords.put("Run Keyword And Expect Error", 2);
+        keywordsTakingKeywords.put("Run Keyword And Return If", 2);
         keywordsTakingKeywords.put("Run Keyword If", 2);
         keywordsTakingKeywords.put("Run Keyword Unless", 2);
         keywordsTakingKeywords.put("Repeat Keyword", 2);
@@ -599,12 +610,12 @@ public class ArgumentPreParser {
 
     private boolean isTemplateActive() {
         if (localTemplateAtLine != NO_TEMPLATE) {
-            RobotLine line = lines.get(localTemplateAtLine - 1);
+            RobotLine line = lines.get(localTemplateAtLine);
             if (line.arguments.size() > localTemplateAtColumn + 1) {
                 return !NONE_STR.equals(line.arguments.get(localTemplateAtColumn + 1).getValue());
             }
-            outer: for (int lineIdx = localTemplateAtLine; lineIdx < lines.size(); ++lineIdx) {
-                line = lines.get(lineIdx);
+            outer: for (int lineNo = localTemplateAtLine + 1; lineNo < lines.size(); ++lineNo) {
+                line = lines.get(lineNo);
                 switch (line.type) {
                     case IGNORE:
                     case COMMENT_LINE:
@@ -635,8 +646,8 @@ public class ArgumentPreParser {
             return keywordCallState;
         }
 
-        outer: for (int lineIdx = lineIterator.nextIndex(); lineIdx < lines.size(); ++lineIdx) {
-            RobotLine nextLine = lines.get(lineIdx);
+        outer: for (int lineNo = lineIterator.nextIndex(); lineNo < lines.size(); ++lineNo) {
+            RobotLine nextLine = lines.get(lineNo);
             LineType type = nextLine.type;
             switch (type) {
                 case COMMENT_LINE:
@@ -707,18 +718,24 @@ public class ArgumentPreParser {
 
     private void lookForLocalTestTemplate() {
         localTemplateAtLine = NO_TEMPLATE;
-        outer: for (int lineIdx = lineIterator.nextIndex() - 1; lineIdx < lines.size(); ++lineIdx) {
-            RobotLine line = lines.get(lineIdx);
-            assert line.lineNo - 1 == lineIdx;
+        outer: for (int lineNo = lineIterator.nextIndex() - 1; lineNo < lines.size(); ++lineNo) {
+            RobotLine line = lines.get(lineNo);
+            assert line.lineNo == lineNo;
             int settingKeyPos = 1;
             switch (line.type) {
                 case TESTCASE_TABLE_TESTCASE_BEGIN:
+                    if (lineNo >= lineIterator.nextIndex()) {
+                        // testcase ended, do not look further
+                        break outer;
+                    }
+                    break;
                 case TESTCASE_TABLE_TESTCASE_LINE:
                     break;
                 case CONTINUATION_LINE:
                     settingKeyPos = determineContinuationLineArgOff(line);
                     break;
                 case COMMENT_LINE:
+                case IGNORE:
                     continue;
                 default:
                     // testcase ended, do not look further

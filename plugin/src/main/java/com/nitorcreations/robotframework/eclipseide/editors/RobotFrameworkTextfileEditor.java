@@ -1,5 +1,5 @@
 /**
- * Copyright 2012-2013 Nitor Creations Oy
+ * Copyright 2012-2014 Nitor Creations Oy
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,11 @@
  */
 package com.nitorcreations.robotframework.eclipseide.editors;
 
+import java.util.regex.Pattern;
+
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.source.ISourceViewer;
@@ -48,15 +51,9 @@ public class RobotFrameworkTextfileEditor extends TextEditor {
 
     public static final String EDITOR_ID = RobotFrameworkTextfileEditor.class.getName();
 
-    private final ColorManager colorManager;
+    private ColorManager colorManager;
 
     private RobotOutlinePage outlinePage;
-
-    public RobotFrameworkTextfileEditor() {
-        colorManager = new ColorManager();
-        setSourceViewerConfiguration(new RobotSourceViewerConfiguration(colorManager));
-        setDocumentProvider(new FileDocumentProvider());
-    }
 
     @Override
     protected void doSetInput(IEditorInput input) throws CoreException {
@@ -81,10 +78,24 @@ public class RobotFrameworkTextfileEditor extends TextEditor {
         }
     }
 
-    private void handleOpenDocument() {
+    private void handleOpenDocument() throws CoreException {
         IDocument document = getEditedDocument();
         System.out.println("Opened document " + getEditorInput() + " -> " + document);
+        ensureRFSupportedLineEndings(document);
         PluginContext.getResourceManager().registerEditor(this);
+    }
+
+    private static final Pattern BAD_LINE_ENDING_PATTERN = Pattern.compile("\r(?:[^\n]|$)");
+
+    private void ensureRFSupportedLineEndings(IDocument document) throws CoreException {
+        String doc = document.get();
+        if (BAD_LINE_ENDING_PATTERN.matcher(doc).find()) {
+            /*
+             * The Robot Framework does not support CR-only line endings, so it's informative to show an error in the
+             * editor rather than pretend everything is ok.
+             */
+            throw new CoreException(new Status(Status.ERROR, Activator.PLUGIN_ID, "File contains MAC OS 9 line endings¹ which are not supported by Robot Framework.\n\nPlease convert it using some appropriate tool.\n\n¹) a Carriage Return character not immediately followed by a Line Feed character"));
+        }
     }
 
     private void handleCloseDocument(IEditorInput old) {
@@ -132,6 +143,11 @@ public class RobotFrameworkTextfileEditor extends TextEditor {
         IPreferenceStore baseEditorPreferenceStore = getPreferenceStore();
         IPreferenceStore ourPreferenceStore = Activator.getDefault().getPreferenceStore();
         setPreferenceStore(new ChainedPreferenceStore(new IPreferenceStore[] { ourPreferenceStore, baseEditorPreferenceStore }));
+
+        colorManager = new ColorManager();
+
+        setSourceViewerConfiguration(new RobotSourceViewerConfiguration(colorManager, getPreferenceStore()));
+        setDocumentProvider(new FileDocumentProvider());
     }
 
     @Override
